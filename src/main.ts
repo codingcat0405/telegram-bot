@@ -19,38 +19,38 @@ async function main() {
 
   console.log("current time: " + currentTime);
   // my timezone is GMT+7 so I will set the time to 0 0 1 * * * (8am everyday in GMT+7)
-  const morningReminderJobFirstTime = schedule.scheduleJob('* * 1 * * *', async () => {
+  const morningReminderJobFirstTime = schedule.scheduleJob('0 1 * * *', async () => {
     console.log('Send morning reminder first!');
     await telegramService.sendMessage(morningMsg);
   });
   //send reminder again after 30m
-  const morningReminderJobSecondTime = schedule.scheduleJob('* 30 1 * * *', async () => {
+  const morningReminderJobSecondTime = schedule.scheduleJob('30 1 * * *', async () => {
     console.log('Send morning reminder second!');
     await telegramService.sendMessage(morningMsg);
   });
   //send reminder again after 1h
-  const morningReminderJobThirdTime = schedule.scheduleJob('* * 2 * * *', async () => {
+  const morningReminderJobThirdTime = schedule.scheduleJob('0 2 * * *', async () => {
     console.log('Send morning reminder third!');
     await telegramService.sendMessage(morningMsg);
   });
 
   // my timezone is GMT+7 so I will set the time to 0 0 1 * * * (8am everyday in GMT+7)
-  const eveningReminderJob = schedule.scheduleJob('* * 12 * * *', async () => {
+  const eveningReminderJob = schedule.scheduleJob('0 12 * * *', async () => {
     console.log('Send evening reminder!');
     await telegramService.sendMessage(eveningMsg);
   });
   //send reminder again after 30m
-  const eveningReminderJobSecondTime = schedule.scheduleJob('* 30 12 * * *', async () => {
+  const eveningReminderJobSecondTime = schedule.scheduleJob('30 12 * * *', async () => {
     console.log('Send evening reminder second!');
     await telegramService.sendMessage(eveningMsg);
   });
   //send reminder again after 1h
-  const eveningReminderJobThirdTime = schedule.scheduleJob('* * 13 * * *', async () => {
+  const eveningReminderJobThirdTime = schedule.scheduleJob('0 13 * * *', async () => {
     console.log('Send evening reminder third!');
     await telegramService.sendMessage(eveningMsg);
   });
   //send reminder again after 1h30
-  const eveningReminderJobFourthTime = schedule.scheduleJob('* 30 13 * * *', async () => {
+  const eveningReminderJobFourthTime = schedule.scheduleJob('30 13 * * *', async () => {
     console.log('Send evening reminder fourth!');
     await telegramService.sendMessage(eveningMsg);
   });
