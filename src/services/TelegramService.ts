@@ -1,16 +1,100 @@
 import TelegramBot = require("node-telegram-bot-api");
-import * as dotenv from 'dotenv' // see https://github.com/motdotla/dotenv#how-do-i-use-dotenv-with-import
+import * as dotenv from 'dotenv'
+import moment = require("moment");
+import VnExpressCrawler from "./VnExpressCrawler";
+import TruyenQQCrawler from "./TruyenQQCrawler"; // see https://github.com/motdotla/dotenv#how-do-i-use-dotenv-with-import
 dotenv.config()
 
 export default class TelegramService {
 
-
+  private readonly _vnExpressCrawler = new VnExpressCrawler();
   private readonly chatId = 1740827516;
   private readonly _bot: TelegramBot;
+  private readonly _truyenQQCrawler = new TruyenQQCrawler();
+
+  private readonly _listCommands: any[];
 
 
   constructor() {
     this._bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, {polling: true});
+    this._vnExpressCrawler = new VnExpressCrawler();
+    this._truyenQQCrawler = new TruyenQQCrawler();
+    this._listCommands = [
+      {
+        command: "ping",
+        handler: this.healthCheck.bind(this),
+        description: "Xem tao còn sống không"
+      },
+      {
+        command: "time",
+        handler: this.getTime.bind(this),
+        description: "Chúng ta đang sống ở năm bao nhiêu"
+      },
+      {
+        command: "help",
+        handler: this.help.bind(this),
+        description: "Xem lệnh nào tao hiểu"
+      },
+      {
+        command: "news",
+        handler: this.getLatestNews.bind(this),
+        description: "Cập nhật tin tức cho người tối cổ"
+      },
+      {
+        command: "onepiece",
+        handler: this.getLatestOnePieces.bind(this),
+        description: "Cập nhật chap mới nhất của one piece cho mấy thằng wibu"
+      }
+
+    ]
+  }
+
+  private async getLatestOnePieces() {
+    const latestChapters = await this._truyenQQCrawler.getLatestOnePieceChapter();
+    if (!latestChapters) {
+      await this._bot.sendMessage(this.chatId, "Tèo rồi, tao không lấy chap mới nhất được");
+      return;
+    }
+
+    moment.locale("vi");
+    const currentTime = moment().format("LLLL");
+    let message = `Chap one piece mới nhât ngày: ${currentTime}:\n`;
+    latestChapters.forEach(([href, title]) => {
+      message += `👉 ${title}: ${href}\n`;
+    });
+    await this._bot.sendMessage(this.chatId, message);
+  }
+
+  private async getLatestNews() {
+    const latestNews = await this._vnExpressCrawler.getLatestNews();
+    if (!latestNews) {
+      await this._bot.sendMessage(this.chatId, "Tèo rồi, tao không lấy được tin tức");
+      return;
+    }
+    moment.locale("vi");
+    const currentTime = moment().format("LLLL");
+    let message = `Cập nhật tin tức từ vn express: ${currentTime}:\n`;
+    latestNews.forEach(([title, href]) => {
+      message += `👉 ${title}: ${href}\n`;
+    });
+    await this._bot.sendMessage(this.chatId, message);
+  }
+
+  private async getTime() {
+    moment.locale("vi");
+    const currentTime = moment().format("LLLL");
+    await this._bot.sendMessage(this.chatId, `Bây giờ là: ${currentTime}`);
+  }
+
+  private healthCheck: () => Promise<void> = async () => {
+    const healthCheckMsgs = [`Tao vẫn sống`, `Gọi cc`, `Sủa lên`, `Đang ngủ`, `Pong`, `Gọi ít thôi`];
+    const randomIndex = Math.floor(Math.random() * healthCheckMsgs.length);
+    await this._bot.sendMessage(this.chatId, healthCheckMsgs[randomIndex]);
+  }
+  private help: () => Promise<void> = async () => {
+    const listCmdMsg = this._listCommands.map((c) => `/${c.command}: ${c.description}`).join("\n");
+    const helpMsg = `Nói chuyện với tao bằng cách gõ lệnh sau:\n${listCmdMsg}`;
+    await this._bot.sendMessage(this.chatId, helpMsg);
   }
 
   async sendMessage(message: string) {
@@ -25,14 +109,14 @@ export default class TelegramService {
       // of the message
 
       const chatId = msg.chat.id;
-      const command = match[1]; // the captured "whatever"
-      if(command === "ping") {
-        await this.sendMessage(`Pong!!!!\n🤖:I'm still alive`);
-
-      } else {
-        await this.sendMessage("Unknown command");
+      const command = match[1];
+      console.log("received command", command);
+      const commandHandler = this._listCommands.find((c) => c.command.toLowerCase() === command.toLowerCase());
+      if (!commandHandler) {
+        await this._bot.sendMessage(chatId, "Lệnh ngu tao đ hiểu gõ /help để biêt lệnh nào tao hiểu");
+        return;
       }
-      console.log("command: " + command);
+      await commandHandler.handler();
     });
   }
 
