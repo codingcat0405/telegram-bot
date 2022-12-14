@@ -66,7 +66,7 @@ export default class TelegramService {
       `Tổng Ram: ${(os.totalmem() / 1024).toFixed(2)} GB\n` +
       `Ram chưa bị húp: ${(os.freemem() / 1024).toFixed(2)} GB\n` +
       `Phần trăm ram bị húp: ${((os.totalmem() - os.freemem()) / os.totalmem() * 100).toFixed(2)}%\n` +
-      `Platform: ${os.platform()}\n` +;
+      `Platform: ${os.platform()}\n`;
     const finalMsg = "Tình trạng sức khỏe của tao:\n" + message;
     await this._bot.sendMessage(this.chatId, finalMsg);
   }
