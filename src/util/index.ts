@@ -2,7 +2,7 @@ import {RequestInfo, RequestInit} from 'node-fetch';
 
 const fetch = (url: RequestInfo, init?: RequestInit) =>
   import('node-fetch').then(({default: fetch}) => fetch(url, init));
-
+import * as os from "os-utils";
 
 export const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -27,4 +27,22 @@ export const getWebsiteContent = async (url: string, retries = 3): Promise<strin
     }
     throw err;
   }
+
+
+}
+
+export const getCPUUsageAsync = async (): Promise<number> => {
+  return new Promise((resolve) => {
+    os.cpuUsage((v) => {
+      resolve(v);
+    });
+  });
+}
+
+export const getCPUFreeAsync = async (): Promise<number> => {
+  return new Promise((resolve) => {
+    os.cpuFree((v) => {
+      resolve(v);
+    });
+  });
 }

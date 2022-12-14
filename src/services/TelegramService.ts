@@ -2,8 +2,11 @@ import TelegramBot = require("node-telegram-bot-api");
 import * as dotenv from 'dotenv'
 import moment = require("moment");
 import VnExpressCrawler from "./VnExpressCrawler";
-import TruyenQQCrawler from "./TruyenQQCrawler"; // see https://github.com/motdotla/dotenv#how-do-i-use-dotenv-with-import
+import TruyenQQCrawler from "./TruyenQQCrawler";
+import {getCPUFreeAsync, getCPUUsageAsync} from "../util";
+// see https://github.com/motdotla/dotenv#how-do-i-use-dotenv-with-import
 dotenv.config()
+import * as os from "os-utils";
 
 export default class TelegramService {
 
@@ -44,9 +47,28 @@ export default class TelegramService {
         command: "onepiece",
         handler: this.getLatestOnePieces.bind(this),
         description: "Cập nhật chap mới nhất của one piece cho mấy thằng wibu"
+      },
+      {
+        command: "health",
+        handler: this.cpuCheck.bind(this),
+        description: "Khám sức khỏe cho tao"
       }
 
     ]
+  }
+
+  private async cpuCheck() {
+    const cpuUsage = await getCPUUsageAsync();
+    const cpuFree = await getCPUFreeAsync();
+
+    const message = `CPU đã bị húp: ${cpuUsage.toFixed(2)}%\n` +
+      `CPU chưa dùng: ${cpuFree.toFixed(2)}%\n` +
+      `Tổng Ram: ${(os.totalmem() / 1024).toFixed(2)} GB\n` +
+      `Ram chưa bị húp: ${(os.freemem() / 1024).toFixed(2)} GB\n` +
+      `Phần trăm ram bị húp: ${((os.totalmem() - os.freemem()) / os.totalmem() * 100).toFixed(2)}%\n` +
+      `Platform: ${os.platform()}\n` +;
+    const finalMsg = "Tình trạng sức khỏe của tao:\n" + message;
+    await this._bot.sendMessage(this.chatId, finalMsg);
   }
 
   private async getLatestOnePieces() {
