@@ -110,7 +110,7 @@ export default class TelegramService {
 
       const chatId = msg.chat.id;
       const command = match[1];
-      console.log("received command", command);
+      console.log(`${new Date()}: received command "${command}" from chatId: ${chatId}`);
       const commandHandler = this._listCommands.find((c) => c.command.toLowerCase() === command.toLowerCase());
       if (!commandHandler) {
         await this._bot.sendMessage(chatId, "Lệnh ngu tao đ hiểu gõ /help để biêt lệnh nào tao hiểu");
@@ -119,6 +119,4 @@ export default class TelegramService {
       await commandHandler.handler();
     });
   }
-
-
 }
