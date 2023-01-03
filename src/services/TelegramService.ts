@@ -11,7 +11,7 @@ import * as os from "os-utils";
 export default class TelegramService {
 
   private readonly _vnExpressCrawler = new VnExpressCrawler();
-  private readonly chatId = 1740827516;
+  // private readonly chatId = 1740827516;
   private readonly _bot: TelegramBot;
   private readonly _truyenQQCrawler = new TruyenQQCrawler();
 
@@ -57,24 +57,24 @@ export default class TelegramService {
     ]
   }
 
-  private async cpuCheck() {
+  private async cpuCheck(chatId) {
     const cpuUsage = await getCPUUsageAsync();
     const cpuFree = await getCPUFreeAsync();
 
     const message = `CPU đã bị húp: ${(cpuUsage * 100).toFixed(2)}%\n` +
-      `CPU chưa dùng: ${(cpuFree * 100) .toFixed(2)}%\n` +
+      `CPU chưa dùng: ${(cpuFree * 100).toFixed(2)}%\n` +
       `Tổng Ram: ${(os.totalmem() / 1024).toFixed(2)} GB\n` +
       `Ram chưa bị húp: ${(os.freemem() / 1024).toFixed(2)} GB\n` +
       `Phần trăm ram bị húp: ${((os.totalmem() - os.freemem()) / os.totalmem() * 100).toFixed(2)}%\n` +
       `Platform: ${os.platform()}\n`;
     const finalMsg = "Tình trạng sức khỏe của tao:\n" + message;
-    await this._bot.sendMessage(this.chatId, finalMsg);
+    await this._bot.sendMessage(chatId, finalMsg);
   }
 
-  private async getLatestOnePieces() {
+  private async getLatestOnePieces(chatId) {
     const latestChapters = await this._truyenQQCrawler.getLatestOnePieceChapter();
     if (!latestChapters) {
-      await this._bot.sendMessage(this.chatId, "Tèo rồi, tao không lấy chap mới nhất được");
+      await this._bot.sendMessage(chatId, "Tèo rồi, tao không lấy chap mới nhất được");
       return;
     }
 
@@ -84,13 +84,13 @@ export default class TelegramService {
     latestChapters.forEach(([href, title]) => {
       message += `👉 ${title}: ${href}\n`;
     });
-    await this._bot.sendMessage(this.chatId, message);
+    await this._bot.sendMessage(chatId, message);
   }
 
-  private async getLatestNews() {
+  private async getLatestNews(chatId) {
     const latestNews = await this._vnExpressCrawler.getLatestNews();
     if (!latestNews) {
-      await this._bot.sendMessage(this.chatId, "Tèo rồi, tao không lấy được tin tức");
+      await this._bot.sendMessage(chatId, "Tèo rồi, tao không lấy được tin tức");
       return;
     }
     moment.locale("vi");
@@ -99,28 +99,29 @@ export default class TelegramService {
     latestNews.forEach(([title, href]) => {
       message += `👉 ${title}: ${href}\n`;
     });
-    await this._bot.sendMessage(this.chatId, message);
+    await this._bot.sendMessage(chatId, message);
   }
 
-  private async getTime() {
+  private async getTime(chatId) {
     moment.locale("vi");
     const currentTime = moment().format("LLLL");
-    await this._bot.sendMessage(this.chatId, `Bây giờ là: ${currentTime}`);
+    await this._bot.sendMessage(chatId, `Bây giờ là: ${currentTime}`);
   }
 
-  private healthCheck: () => Promise<void> = async () => {
+  private async healthCheck(chatId) {
     const healthCheckMsgs = [`Tao vẫn sống`, `Gọi cc`, `Sủa lên`, `Đang ngủ`, `Pong`, `Gọi ít thôi`];
     const randomIndex = Math.floor(Math.random() * healthCheckMsgs.length);
-    await this._bot.sendMessage(this.chatId, healthCheckMsgs[randomIndex]);
-  }
-  private help: () => Promise<void> = async () => {
-    const listCmdMsg = this._listCommands.map((c) => `/${c.command}: ${c.description}`).join("\n");
-    const helpMsg = `Nói chuyện với tao bằng cách gõ lệnh sau:\n${listCmdMsg}`;
-    await this._bot.sendMessage(this.chatId, helpMsg);
+    await this._bot.sendMessage(chatId, healthCheckMsgs[randomIndex]);
   }
 
-  async sendMessage(message: string) {
-    await this._bot.sendMessage(this.chatId, message);
+  private async help(chatId) {
+    const listCmdMsg = this._listCommands.map((c) => `/${c.command}: ${c.description}`).join("\n");
+    const helpMsg = `Nói chuyện với tao bằng cách gõ lệnh sau:\n${listCmdMsg}`;
+    await this._bot.sendMessage(chatId, helpMsg);
+  }
+
+  async sendMessage(chatId, message: string) {
+    await this._bot.sendMessage(chatId, message);
   }
 
   async startListen() {
@@ -138,7 +139,7 @@ export default class TelegramService {
         await this._bot.sendMessage(chatId, "Lệnh ngu tao đ hiểu gõ /help để biêt lệnh nào tao hiểu");
         return;
       }
-      await commandHandler.handler();
+      await commandHandler.handler(chatId);
     });
   }
 }
