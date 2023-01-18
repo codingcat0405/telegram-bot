@@ -46,3 +46,8 @@ export const getCPUFreeAsync = async (): Promise<number> => {
     });
   });
 }
+
+
+export const convertBytesToGB = (bytes: number): number => {
+  return bytes / 1024 / 1024 / 1024;
+}

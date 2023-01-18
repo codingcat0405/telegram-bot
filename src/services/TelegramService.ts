@@ -3,7 +3,8 @@ import * as dotenv from 'dotenv'
 import moment = require("moment");
 import VnExpressCrawler from "./VnExpressCrawler";
 import TruyenQQCrawler from "./TruyenQQCrawler";
-import {getCPUFreeAsync, getCPUUsageAsync} from "../util";
+import {convertBytesToGB, getCPUFreeAsync, getCPUUsageAsync} from "../util";
+import checkDiskSpace from 'check-disk-space'
 // see https://github.com/motdotla/dotenv#how-do-i-use-dotenv-with-import
 dotenv.config()
 import * as os from "os-utils";
@@ -60,12 +61,16 @@ export default class TelegramService {
   private async cpuCheck(chatId) {
     const cpuUsage = await getCPUUsageAsync();
     const cpuFree = await getCPUFreeAsync();
+    let {free, size} = await checkDiskSpace('/');
+    const usedPercents = Math.round((size - free) / size * 100);
 
     const message = `CPU đã bị húp: ${(cpuUsage * 100).toFixed(2)}%\n` +
       `CPU chưa dùng: ${(cpuFree * 100).toFixed(2)}%\n` +
       `Tổng Ram: ${(os.totalmem() / 1024).toFixed(2)} GB\n` +
       `Ram chưa bị húp: ${(os.freemem() / 1024).toFixed(2)} GB\n` +
       `Phần trăm ram bị húp: ${((os.totalmem() - os.freemem()) / os.totalmem() * 100).toFixed(2)}%\n` +
+      `Còn ${convertBytesToGB(free).toFixed(2)} GB chưa bị húp trên tổng số ${convertBytesToGB(size).toFixed(2)} GB\n` +
+      `=> Đã sử dụng ${usedPercents} % bộ nhớ\n` +
       `Platform: ${os.platform()}\n`;
     const finalMsg = "Tình trạng sức khỏe của tao:\n" + message;
     await this._bot.sendMessage(chatId, finalMsg);
@@ -122,6 +127,10 @@ export default class TelegramService {
 
   async sendMessage(chatId, message: string) {
     await this._bot.sendMessage(chatId, message);
+  }
+
+  async sendImage(chatId, filePath: string) {
+    await this._bot.sendPhoto(chatId, filePath);
   }
 
   async startListen() {
