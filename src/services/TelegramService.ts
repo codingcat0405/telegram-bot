@@ -3,26 +3,31 @@ import * as dotenv from 'dotenv'
 import moment = require("moment");
 import VnExpressCrawler from "./VnExpressCrawler";
 import TruyenQQCrawler from "./TruyenQQCrawler";
-import {convertBytesToGB, getCPUFreeAsync, getCPUUsageAsync} from "../util";
+import { convertBytesToGB, getCPUFreeAsync, getCPUUsageAsync } from "../util";
 import checkDiskSpace from 'check-disk-space'
 // see https://github.com/motdotla/dotenv#how-do-i-use-dotenv-with-import
 dotenv.config()
 import * as os from "os-utils";
+import { log } from "console";
+import FacebookVideoDownloaderService from "./FacebookVideoDownloaderService";
+import { unlinkSync } from "fs";
 
 export default class TelegramService {
 
-  private readonly _vnExpressCrawler = new VnExpressCrawler();
+  private readonly _vnExpressCrawler: VnExpressCrawler;
   // private readonly chatId = 1740827516;
   private readonly _bot: TelegramBot;
-  private readonly _truyenQQCrawler = new TruyenQQCrawler();
+  private readonly _truyenQQCrawler: TruyenQQCrawler;
 
   private readonly _listCommands: any[];
+  private readonly _fbVideoDownloaderService: FacebookVideoDownloaderService;
 
 
   constructor() {
-    this._bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, {polling: true});
+    this._bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, { polling: true });
     this._vnExpressCrawler = new VnExpressCrawler();
     this._truyenQQCrawler = new TruyenQQCrawler();
+    this._fbVideoDownloaderService = new FacebookVideoDownloaderService();
     this._listCommands = [
       {
         command: "ping",
@@ -53,15 +58,37 @@ export default class TelegramService {
         command: "health",
         handler: this.cpuCheck.bind(this),
         description: "Khám sức khỏe cho tao"
+      },
+      {
+        command: "fbdownload",
+        handler: this.downloadFbVideo.bind(this),
+        description: "Tải video từ facebook: hiện hỗ trợ reel và facebook watch"
       }
 
     ]
   }
+  private async downloadFbVideo(chatId, params = []) {
+    const url = params[0];
+    if (!url) {
+      await this._bot.sendMessage(chatId, "Thiếu video url rồi. hdsd: /fbdownload <url>");
+      return;
+    }
+    const fileName = `out/videos/${new Date().getTime()}.mp4`
+    const downloadSuccess = await this._fbVideoDownloaderService.downloadVideo(url, fileName);
+    if (!downloadSuccess) {
+      await this._bot.sendMessage(chatId, "Tải video thất bại");
+      return;
+    }
+    await this._bot.sendMessage(chatId, "Vid của thí chủ đây >>");
+    await this._bot.sendVideo(chatId, fileName);
+    //delete file after send
+    unlinkSync(fileName);
 
+  }
   private async cpuCheck(chatId) {
     const cpuUsage = await getCPUUsageAsync();
     const cpuFree = await getCPUFreeAsync();
-    let {free, size} = await checkDiskSpace('/');
+    let { free, size } = await checkDiskSpace('/');
     const usedPercents = Math.round((size - free) / size * 100);
 
     const message = `CPU đã bị húp: ${(cpuUsage * 100).toFixed(2)}%\n` +
@@ -141,14 +168,18 @@ export default class TelegramService {
       // of the message
 
       const chatId = msg.chat.id;
-      const command = match[1];
-      console.log(`${new Date()}: received command "${command}" from chatId: ${chatId}`);
+      const command = match[1].split(" ")[0].trim();
+      //get user params ex /weather hanoi => params = ["hanoi"]
+      const params = match.input.split(" ").slice(1);
+      console.log(`${new Date()}: received command "${command}" from chatId: ${chatId} with params: ${JSON.stringify(params)}`);
+
       const commandHandler = this._listCommands.find((c) => c.command.toLowerCase() === command.toLowerCase());
       if (!commandHandler) {
         await this._bot.sendMessage(chatId, "Lệnh ngu tao đ hiểu gõ /help để biêt lệnh nào tao hiểu");
         return;
       }
-      await commandHandler.handler(chatId);
+
+      await commandHandler.handler(chatId, params);
     });
   }
 }
