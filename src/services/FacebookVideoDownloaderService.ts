@@ -8,7 +8,8 @@ class FacebookVideoDownloaderService {
 
         try {
             browser = await puppeteer.launch({
-                headless: "new"
+                headless: "new",
+                args: ['--no-sandbox']
             });
             //by looking at the html, we can see that the url is after
             const hd_video_property = "playable_url_quality_hd";
