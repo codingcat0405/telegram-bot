@@ -4,11 +4,12 @@ import puppeteer from "puppeteer";
 
 class FacebookVideoDownloaderService {
     private async _getDownloadUrl(fbVideoUrl: string) {
-        const browser = await puppeteer.launch({
-            headless: "new"
-        });
+        let browser = null;
 
         try {
+            browser = await puppeteer.launch({
+                headless: "new"
+            });
             //by looking at the html, we can see that the url is after
             const hd_video_property = "playable_url_quality_hd";
             const page = await browser.newPage();
@@ -25,7 +26,9 @@ class FacebookVideoDownloaderService {
             console.log(error);
             return null;
         } finally {
-            await browser.close();
+            if (browser) {
+                await browser.close();
+            }
         }
     }
 
