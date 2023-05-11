@@ -45,6 +45,11 @@ export default class TelegramService {
         description: "Xem lệnh nào tao hiểu"
       },
       {
+        command: "start",
+        handler: this.help.bind(this),
+        description: "Xem lệnh nào tao hiểu"
+      },
+      {
         command: "news",
         handler: this.getLatestNews.bind(this),
         description: "Cập nhật tin tức cho người tối cổ"
