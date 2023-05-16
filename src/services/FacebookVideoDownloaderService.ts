@@ -1,7 +1,7 @@
 import axios from "axios";
 import { createWriteStream } from "fs";
 import puppeteer from "puppeteer";
-
+import TelegramBot = require("node-telegram-bot-api");
 class FacebookVideoDownloaderService {
     private async _getDownloadUrl(fbVideoUrl: string) {
         let browser = null;
@@ -66,6 +66,19 @@ class FacebookVideoDownloaderService {
         }
         const res = await this._downloadFile(downloadUrl, outputLocationPath);
         return res;
+    }
+
+    public async getVideoStream(fbVideoUrl: string) {
+        const downloadUrl = await this._getDownloadUrl(fbVideoUrl);
+        if (!downloadUrl) {
+            return false;
+        }
+        const res = await axios({
+            method: 'get',
+            url: downloadUrl,
+            responseType: 'stream',
+        })
+        return res.data;
     }
 }
 

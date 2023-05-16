@@ -73,21 +73,26 @@ export default class TelegramService {
     ]
   }
   private async downloadFbVideo(chatId, params = []) {
-    const url = params[0];
-    if (!url) {
-      await this._bot.sendMessage(chatId, "Thiếu video url rồi. hdsd: /fbdownload <url>");
-      return;
+    try {
+      const url = params[0];
+      if (!url) {
+        await this._bot.sendMessage(chatId, "Thiếu video url rồi. hdsd: /fbdownload <url>");
+        return;
+      }
+      const startTime = Date.now();
+      const videoStream = await this._fbVideoDownloaderService.getVideoStream(url);
+      if (!videoStream) {
+        await this._bot.sendMessage(chatId, "Tải video thất bại");
+        return;
+      }
+      await this._bot.sendVideo(chatId, videoStream);
+      const endTime = Date.now();
+      const time = (endTime - startTime) / 1000;
+      await this._bot.sendMessage(chatId, `Tải video thành công trong ${time} giây`);
+    } catch (e) {
+      console.log(e);
+      await this._bot.sendMessage(chatId, "Tải video thất bại " + e.message);
     }
-    const fileName = `out/videos/${new Date().getTime()}.mp4`
-    const downloadSuccess = await this._fbVideoDownloaderService.downloadVideo(url, fileName);
-    if (!downloadSuccess) {
-      await this._bot.sendMessage(chatId, "Tải video thất bại");
-      return;
-    }
-    await this._bot.sendMessage(chatId, "Vid của thí chủ đây >>");
-    await this._bot.sendVideo(chatId, fileName);
-    //delete file after send
-    unlinkSync(fileName);
 
   }
   private async cpuCheck(chatId) {
