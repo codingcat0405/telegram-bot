@@ -3,15 +3,18 @@ import * as dotenv from 'dotenv'
 import moment = require("moment");
 import VnExpressCrawler from "./VnExpressCrawler";
 import TruyenQQCrawler from "./TruyenQQCrawler";
-import { convertBytesToGB, getCPUFreeAsync, getCPUUsageAsync } from "../util";
+import {convertBytesToGB, getCPUFreeAsync, getCPUUsageAsync} from "../util";
 import checkDiskSpace from 'check-disk-space'
 // see https://github.com/motdotla/dotenv#how-do-i-use-dotenv-with-import
 dotenv.config()
 import * as os from "os-utils";
-import { log } from "console";
+import {log} from "console";
 import FacebookVideoDownloaderService from "./FacebookVideoDownloaderService";
-import { unlinkSync } from "fs";
+import {unlinkSync} from "fs";
+import {RequestInfo, RequestInit} from 'node-fetch';
 
+const fetch = (url: RequestInfo, init?: RequestInit) =>
+  import('node-fetch').then(({default: fetch}) => fetch(url, init));
 export default class TelegramService {
 
   private readonly _vnExpressCrawler: VnExpressCrawler;
@@ -24,7 +27,7 @@ export default class TelegramService {
 
 
   constructor() {
-    this._bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, { polling: true });
+    this._bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, {polling: true});
     this._vnExpressCrawler = new VnExpressCrawler();
     this._truyenQQCrawler = new TruyenQQCrawler();
     this._fbVideoDownloaderService = new FacebookVideoDownloaderService();
@@ -73,13 +76,46 @@ export default class TelegramService {
         command: "dwtinfo",
         handler: this.getDwtInfo.bind(this),
         description: "Dwt info vi em huy hay quen"
+      },
+      {
+        command: "haicode",
+        handler: this.getHaiCodeMeme.bind(this),
+        description: "Hài code meme"
       }
-
     ]
   }
+
+  private async getHaiCodeMeme(chatId) {
+    try {
+      //random from 0 to 6
+      const randomPage = Math.floor(Math.random() * 7);
+      const url = `	https://haicodeapi.click/api/v1/posts?limit=10&status=2&page=${randomPage}`;
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        }
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      const listPost = data.data.content;
+      const randomPost = listPost[Math.floor(Math.random() * listPost.length)];
+      const {title, image} = randomPost;
+      await this._bot.sendPhoto(chatId, image);
+      await this._bot.sendMessage(chatId, `${title}`);
+      return;
+    } catch (err) {
+      console.log(err);
+      await this._bot.sendMessage(chatId, "Tải meme thất bại " + err.message);
+    }
+  }
+
   private async getDwtInfo(chatId) {
     const dwtGroup = -1001609537689;
-    if(chatId !== dwtGroup) {
+    if (chatId !== dwtGroup) {
       await this._bot.sendMessage(chatId, "Opps, em không được phép xem thông tin này");
       return;
     }
@@ -88,8 +124,9 @@ export default class TelegramService {
       "- tbht: 13.215.19.135 https://tbht.dwt.vn\n" +
       "- dopp: 13.215.57.172 https://mastertran.dwt.vn\n" +
       '- file test: https://docs.google.com/spreadsheets/d/1A8cONIaBqoJaYz4filqd0-Mz3G4h1c15niZFbzdrcUM/edit#gid=663965365';
-    await this._bot.sendMessage(chatId, info);  
+    await this._bot.sendMessage(chatId, info);
   }
+
   private async downloadFbVideo(chatId, params = []) {
     try {
       const url = params[0];
@@ -113,10 +150,11 @@ export default class TelegramService {
     }
 
   }
+
   private async cpuCheck(chatId) {
     const cpuUsage = await getCPUUsageAsync();
     const cpuFree = await getCPUFreeAsync();
-    let { free, size } = await checkDiskSpace('/');
+    let {free, size} = await checkDiskSpace('/');
     const usedPercents = Math.round((size - free) / size * 100);
 
     const message = `CPU đã bị húp: ${(cpuUsage * 100).toFixed(2)}%\n` +
