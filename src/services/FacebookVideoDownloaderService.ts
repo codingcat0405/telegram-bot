@@ -12,7 +12,7 @@ class FacebookVideoDownloaderService {
                 args: ['--no-sandbox']
             });
             //by looking at the html, we can see that the url is after
-            const hd_video_property = "playable_url_quality_hd";
+            const hd_video_property = "base_url";
             const page = await browser.newPage();
             await page.goto(fbVideoUrl, { waitUntil: 'domcontentloaded' });
             // Wait for 5 seconds
