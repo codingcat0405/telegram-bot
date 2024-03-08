@@ -119,11 +119,8 @@ export default class TelegramService {
       await this._bot.sendMessage(chatId, "Opps, em không được phép xem thông tin này");
       return;
     }
-    const info = `DWT info:\n` +
-      "- test: 18.139.197.20 https://sdwttest.dwt.vn \n" +
-      "- tbht: 13.215.19.135 https://tbht.dwt.vn\n" +
-      "- dopp: 13.215.57.172 https://mastertran.dwt.vn\n" +
-      '- file test: https://docs.google.com/spreadsheets/d/1A8cONIaBqoJaYz4filqd0-Mz3G4h1c15niZFbzdrcUM/edit#gid=663965365';
+    const info = `DWT đã được chuyển về lilhuy's private cloud xem chi tiết tại đây\n` +
+      "https://docs.google.com/spreadsheets/d/1UzIef20ZiV9XFSIxKApMMNs5GdB05fgNfx52O_odRec/edit#gid=0";
     await this._bot.sendMessage(chatId, info);
   }
 
